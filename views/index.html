@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="messageDiv">
+</div>
+<h3 id="Liste_Utilisateur_Connecte"> Liste Utilisateur connecté </h3>
+<div id="liste_utilisateurDiv">
+</div>
+
+<input type="text" id="messageInput">
+<button id="submitBtn">Envoyer</button>
+<input type="text" id="pseudoInput" placeholder=" Ton pseudo ? ">
+<button id="submitBtnpseudo"> Valider</button>
+
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    var messageDiv = document.getElementById('messageDiv');
+    var submitBtn = document.getElementById('submitBtn');
+    var submitBtnpseudo = document.getElementById('submitBtnpseudo');
+    var messageInput = document.getElementById('messageInput');
+    var liste_utilisateurDiv = document.getElementById('liste_utilisateurDiv');
+    var pseudoInput = document.getElementById('pseudoInput');
+    var pseudo = "" ;
+
+    // de base il est impossible d'envoyer un message ou de voir les utilisateurs connectées
+    document.getElementById("submitBtn").hidden = true;
+    document.getElementById("messageInput").hidden = true;
+    document.getElementById("Liste_Utilisateur_Connecte").hidden = true;
+
+    submitBtn.addEventListener('click', ()=> {
+        socket.emit('message', messageInput.value , pseudo);
+        messageDiv.innerHTML +=('<h4>' + pseudo + ": " + messageInput.value +'</h4>');
+        messageInput.value = '';
+    });
+
+    // quand on clique sur le bouton valider on attribut l'ID du client avec son pseudo choisit qu'on envoie au
+    // serveur et au niveau du client on affiche le tchat aisni que les utilisateurs connecté
+    submitBtnpseudo.addEventListener('click', ()=> {
+        socket.emit('creation_pseudo', pseudoInput.value , socket.id );
+        document.getElementById("submitBtnpseudo").hidden = true;
+        document.getElementById("pseudoInput").hidden = true ;
+        document.getElementById("submitBtn").hidden = false ;
+        document.getElementById("messageInput").hidden = false ;
+        document.getElementById("Liste_Utilisateur_Connecte").hidden = false;
+        pseudo = pseudoInput.value ;
+        console.log(pseudo);
+    });
+
+    var socket = io();
+    // on écoute le serveur est quand un évènement message arrive
+    // on recoit un string a afficher dans le front
+    socket.on('message', (data) => {
+        console.log('message received : ', data);
+        messageDiv.innerHTML +=('<h4>' + data +'</h4>');
+    });
+
+    // quand l'évènement actualisation_liste est recue c'est pour mettre a jour la liste des personnes
+    // connecté a tout les clients
+    socket.on('actualisation_liste', (liste) => {
+        console.log(' liste client ', liste);
+        liste_utilisateurDiv.innerHTML = "";
+        liste[0].forEach( element => {
+            liste_utilisateurDiv.innerHTML += element + " / ";
+        })
+
+        // l'évènement deconnection est similaire au précèdent car on recoit une nouvelle liste
+        // des personne connecté pour tout les utilisateurs connecté
+        socket.on('deconnection', (data) => {
+
+                        data[0].forEach( element => {
+                        liste_utilisateurDiv.innerHTML += element + " / ";
+                    })
+
+
+        });
+
+    });
+
+    socket.emit('loaded', 'page loaded !!!')
+</script>
+</body>
+</html>
